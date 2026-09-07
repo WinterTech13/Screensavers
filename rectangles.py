@@ -1,106 +1,146 @@
-import math
 import pyautogui
 import random
-import sys
-import time
 from tkinter import *
 
-root = Tk()
+COLOR_RECT = "#a562f9"
+COLOR_TRANS = "#ffffff"
+COLOR_BG = "#000000"
+DELAY = 50
+INTERVAL = 9
+MAX_WINDOWS = 13
+RECT_DIM_1 = 200
+RECT_DIM_2 = 100
+SPEED = 19
 
-max_windows = 13
-speed = 19
-interval = math.ceil((1/120)*1000)
-spawn_delay = 250
-mouse_position = pyautogui.position()
+class Background(Tk):
+    def __init__(self):
+        super().__init__()
+        self.screenWidth = self.winfo_screenwidth()
+        self.screenHeight = self.winfo_screenheight()
+        self.overrideredirect(1)
+        self.attributes("-topmost", True)
+        self.geometry(f"{self.screenWidth}x{self.screenHeight}+0+0")
+        self.configure(background = COLOR_BG)
 
 class Rectangle:
-    def __init__(self, root):
-        self.root = root
-        self.screen_width = root.winfo_screenwidth()
-        self.screen_height = root.winfo_screenheight()
+    def __init__(self):
         self.window = Toplevel(root)
         self.window.overrideredirect(1)
-        self.window.attributes('-topmost', True)
-        self.window.attributes('-transparentcolor', 'white')
-        self.create()
+        self.window.attributes("-topmost", True)
+        self.window.attributes("-transparentcolor", COLOR_TRANS)
 
     def create(self):
-        self.direction = random.randint(1, 4)
-        if self.direction in [1, 2]:
-            self.width = 200
-            self.height = 100
-        else:
-            self.width = 100
-            self.height = 200
-
-        if self.direction == 1:
-            self.startw = -self.width
-            self.endw = self.screen_width
-            self.starth = self.endh = random.randint(0, self.screen_height - self.height)
-            self.w = speed
-            self.h = 0
-        elif self.direction == 2:
-            self.startw = self.screen_width
-            self.endw = -self.width
-            self.starth = self.endh = random.randint(0, self.screen_height - self.height)
-            self.w = -speed
-            self.h = 0
-        elif self.direction == 3:
-            self.startw = self.endw = random.randint(0, self.screen_width - self.width)
-            self.starth = -self.height
-            self.endh = self.screen_height
-            self.w = 0
-            self.h = speed
-        else:
-            self.startw = self.endw = random.randint(0, self.screen_width - self.width)
-            self.starth = self.screen_height
-            self.endh = -self.height
-            self.w = 0
-            self.h = -speed
-
-        self.window.geometry(f"{self.width}x{self.height}+{int(self.startw)}+{int(self.starth)}")
-        self.canvas = Canvas(self.window, width=self.width, height=self.height, highlightthickness=0, bg='white')
-        self.canvas.pack(fill=BOTH, expand=True)
-        self.canvas.create_rectangle(0, 0, self.width-4, self.height-4, outline='#a562f9', width=4, fill='')
+        self.window.geometry(f"{self.width}x{self.height}+{self.startPosWidth}+{self.startPosHeight}")
+        self.canvas = Canvas(
+            self.window,
+            width = self.width,
+            height = self.height,
+            highlightthickness = 0,
+            background = COLOR_TRANS
+        )
+        self.canvas.pack(
+            fill = BOTH,
+            expand = True
+        )
+        self.canvas.create_rectangle(
+            0,
+            0,
+            self.width,
+            self.height,
+            outline = COLOR_RECT,
+            width = 4,
+            fill = ""
+        )
 
     def animate(self):
-        if ((self.direction in [1, 2] and ((self.w >= 0 and self.startw <= self.endw) or (self.w <= 0 and self.startw >= self.endw))) or
-            (self.direction in [3, 4] and ((self.h >= 0 and self.starth <= self.endh) or (self.h <= 0 and self.starth >= self.endh)))):
-            self.startw += self.w
-            self.starth += self.h
-            self.window.geometry(f"{self.width}x{self.height}+{int(self.startw)}+{int(self.starth)}")
-            self.window.after(interval, self.animate)
-        else:
+        self.startPosWidth += self.speedHorizontal
+        self.startPosHeight += self.speedVertical
+        self.window.geometry(f"{self.width}x{self.height}+{self.startPosWidth}+{self.startPosHeight}")
+        outside = (
+            self.startPosWidth + self.width < 0 or
+            self.startPosWidth > root.screenWidth or
+            self.startPosHeight + self.height < 0 or
+            self.startPosHeight > root.screenHeight
+        )
+        if outside:
             self.window.destroy()
-            create_rectangle(self.root)
+            return
+        self.window.after(INTERVAL, self.animate)
 
-def create_background(root):
-    bg_window = Toplevel(root)
-    bg_window.overrideredirect(1)
-    bg_window.attributes('-topmost', True)
-    bg_window.geometry(f"{root.winfo_screenwidth()}x{root.winfo_screenheight()}+0+0")
-    bg_window.configure(bg='black')
-    return bg_window
+class Up(Rectangle):
+    def __init__(self):
+        super().__init__()
+        self.width = RECT_DIM_2
+        self.height = RECT_DIM_1
+        self.startPosWidth = random.randint(0, root.screenWidth - self.width)
+        self.startPosHeight = -self.height
+        self.speedHorizontal = 0
+        self.speedVertical = SPEED
+        self.create()
 
-def create_rectangle(root):
-    if len(root.winfo_children()) < max_windows + 1:
-        rect = Rectangle(root)
+class Down(Rectangle):
+    def __init__(self):
+        super().__init__()
+        self.width = RECT_DIM_2
+        self.height = RECT_DIM_1
+        self.startPosWidth = random.randint(0, root.screenWidth - self.width)
+        self.startPosHeight = root.screenHeight
+        self.speedHorizontal = 0
+        self.speedVertical = -SPEED
+        self.create()
+
+class Right(Rectangle):
+    def __init__(self):
+        super().__init__()
+        self.width = RECT_DIM_1
+        self.height = RECT_DIM_2
+        self.startPosWidth = -self.width
+        self.startPosHeight = random.randint(0, root.screenHeight - self.height)
+        self.speedHorizontal = SPEED
+        self.speedVertical = 0
+        self.create()
+
+class Left(Rectangle):
+    def __init__(self):
+        super().__init__()
+        self.width = RECT_DIM_1
+        self.height = RECT_DIM_2
+        self.startPosWidth = root.screenWidth
+        self.startPosHeight = random.randint(0, root.screenHeight - self.height)
+        self.speedHorizontal = -SPEED
+        self.speedVertical = 0
+        self.create()
+
+class Mouse:
+    def __init__(self):
+        self.pos = pyautogui.position()
+        self.currentPos = self.pos
+        self.check()
+
+    def check(self):
+        self.currentPos = pyautogui.position()
+        if self.currentPos != self.pos:
+            root.destroy()
+            return
+        root.after(DELAY, self.check)
+
+def createRectangle():
+    if len(root.winfo_children()) < MAX_WINDOWS:
+        direction = random.randint(1, 4)
+        match direction:
+            case 1:
+                rect = Up()
+            case 2:
+                rect = Down()
+            case 3:
+                rect = Right()
+            case 4:
+                rect = Left()
         rect.animate()
-        root.after(spawn_delay, lambda: create_rectangle(root))
-    root.after(100, check_mouse_movement)
+    root.after(DELAY, createRectangle)
 
-def check_mouse_movement():
-    global mouse_position
-    current_pos = pyautogui.position()
-    if current_pos != mouse_position:
-        bg_window.destroy()
-        sys.exit()
-    mouse_position = current_pos
-    root.after(100, check_mouse_movement)
-
-root.withdraw()
-bg_window = create_background(root)
-create_rectangle(root)
-check_mouse_movement()
+root = Background()
+mouse = Mouse()
+createRectangle()
 
 root.mainloop()
