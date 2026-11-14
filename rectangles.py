@@ -7,7 +7,7 @@ COLOR_TRANS = "#ffffff"
 COLOR_BG = "#000000"
 DELAY = 50
 INTERVAL = 9
-MAX_WINDOWS = 13
+MAX_WINDOWS = 20
 RECT_DIM_1 = 200
 RECT_DIM_2 = 100
 SPEED = 19
@@ -28,6 +28,7 @@ class Rectangle:
         self.window.overrideredirect(1)
         self.window.attributes("-topmost", True)
         self.window.attributes("-transparentcolor", COLOR_TRANS)
+        self.randomColor()
 
     def create(self):
         self.window.geometry(f"{self.width}x{self.height}+{self.startPosWidth}+{self.startPosHeight}")
@@ -47,7 +48,7 @@ class Rectangle:
             0,
             self.width,
             self.height,
-            outline = COLOR_RECT,
+            outline = self.color,
             width = 4,
             fill = ""
         )
@@ -66,6 +67,16 @@ class Rectangle:
             self.window.destroy()
             return
         self.window.after(INTERVAL, self.animate)
+
+    def randomColor(self):
+        self.colRed = random.randint(0, 255)
+        self.colGreen = random.randint(0, 255)
+        self.colBlue = random.randint(0, 255)
+        self.color = "#{:02x}{:02x}{:02x}".format(
+            self.colRed,
+            self.colGreen,
+            self.colBlue
+        )
 
 class Up(Rectangle):
     def __init__(self):
@@ -140,6 +151,7 @@ def createRectangle():
     root.after(DELAY, createRectangle)
 
 root = Background()
+pyautogui.moveTo(root.screenWidth-1, root.screenHeight-1)
 mouse = Mouse()
 createRectangle()
 
