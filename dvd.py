@@ -1,62 +1,98 @@
-import math
 import pyautogui
 import random
-import time
 from tkinter import *
 
-interval = math.floor((1/120)*1000)
-colors = ["red", "orange", "yellow", "green", "blue", "purple"]
-dvdtext = "DVD"
+INTERVAL = 9
+DELAY = 50
+COLORS = ["#ff0000", "#ffa500", "#ffff00", "#00ff00", "#0000ff", "#800080"]
+COLOR_BG = "#000000"
+DVD_STRING = "DVD"
+RECT_DIM_W = 100
+RECT_DIM_H = 40
+SPEED = 3
+
+class Background(Tk):
+    def __init__(self):
+        super().__init__()
+        self.screenWidth = self.winfo_screenwidth()
+        self.screenHeight = self.winfo_screenheight()
+        self.overrideredirect(1)
+        # self.attributes("-topmost", True)
+        self.geometry(f"{self.screenWidth}x{self.screenHeight}+0+0")
+        self.configure(background = COLOR_BG)
 
 class DVD:
     def __init__(self):
-        self.window = Tk()
-        self.window.attributes('-topmost', True)
-        self.window.eval('tk::PlaceWindow . center')
+        self.window = Toplevel(root)
         self.window.overrideredirect(1)
-        self.window.resizable(0,0)
+        self.window.attributes("-topmost", True)
 
-        self.screen_width = self.window.winfo_screenwidth()
-        self.screen_height = self.window.winfo_screenheight()
-        self.window_width = 100
-        self.window_height = 100
+        self.width = RECT_DIM_W
+        self.height = RECT_DIM_H
+        self.speedHorizontal = SPEED * random.choice([-1, 1])
+        self.speedVertical = SPEED * random.choice([-1, 1])
+        self.posWidth = random.randint(0, root.screenWidth - self.width)
+        self.posHeight = random.randint(0, root.screenHeight - self.height)
+        self.create()
 
-        self.startx = random.randint(self.window_width, (self.screen_width - (self.window_width + 10)))
-        self.starty = random.randint(self.window_height, (self.screen_height - (self.window_height + 10)))
-        self.movex = self.movey = 5
+    def create(self):
+        self.window.geometry(f"{self.width}x{self.height}+{self.posWidth}+{self.posHeight}")
+        self.canvas = Canvas(
+            self.window,
+            width = self.width,
+            height = self.height,
+            highlightthickness = 0,
+            background = COLOR_BG
+        )
+        self.canvas.pack(
+            fill = BOTH,
+            expand = True
+        )
+        self.text = self.canvas.create_text(
+            self.width / 2,
+            self.height / 2,
+            text = DVD_STRING,
+            font = ("Arial", 30),
+            fill = random.choice(COLORS)
+        )
+        self.animate()
 
-        self.window.geometry(f"{self.screen_width}x{self.screen_height}+0+0")
-        self.window.configure(bg="black")
-        self.canvas = Canvas(self.window, width = self.window_width, height = self.window_height, bg = "black", highlightthickness = 0)
-        self.text = self.canvas.create_text(50, 50, text=dvdtext, fill="purple", font=("Arial", 30, "bold"))
-        self.canvas.place(x = self.startx, y = self.starty)
+    def animate(self):
+        self.posWidth += self.speedHorizontal
+        self.posHeight += self.speedVertical
+        self.window.geometry(f"{self.width}x{self.height}+{self.posWidth}+{self.posHeight}")
 
-        self.mouse_position = pyautogui.position()
+        if self.posWidth < 0 or self.posWidth > root.screenWidth - self.width:
+            self.color(self.text)
+            self.speedHorizontal *= -1
+        if self.posHeight < 0 or self.posHeight > root.screenHeight - self.height:
+            self.color(self.text)
+            self.speedVertical *= -1
 
-    def dvd(self):
-        if self.startx <= 0 or self.startx + self.window_width >= self.screen_width:
-            self.movex *= -1
-            self.canvas.itemconfig(self.text, fill=colors[random.randint(0,len(colors)-1)])
-        if self.starty <= 0 or self.starty + self.window_height >= self.screen_height:
-            self.movey *= -1
-            self.canvas.itemconfig(self.text, fill=colors[random.randint(0,len(colors)-1)])
-        self.startx += self.movex
-        self.starty += self.movey
-        self.canvas.place(x = self.startx, y = self.starty)
-        self.window.after(interval, self.dvd)
+        self.window.after(INTERVAL, self.animate)
 
-    def check_mouse_movement(self):
-        current_pos = pyautogui.position()
-        if current_pos != self.mouse_position:
-            self.window.destroy()
-        self.mouse_position = current_pos
-        self.window.after(interval, self.check_mouse_movement)
+    def color(self, id):
+        self.canvas.itemconfig(
+            id,
+            fill = random.choice(COLORS)
+        )
 
-    def run(self):
-        self.check_mouse_movement()
-        self.dvd()
-        self.window.mainloop()
+class Mouse:
+    def __init__(self):
+        self.pos = pyautogui.position()
+        self.currentPos = self.pos
+        self.check()
 
-screensaver = DVD()
-screensaver.run()
+    def check(self):
+        self.currentPos = pyautogui.position()
+        if self.currentPos != self.pos:
+            root.destroy()
+            return
+        root.after(DELAY, self.check)
 
+root = Background()
+pyautogui.moveTo(root.screenWidth - 1, root.screenHeight - 1)
+mouse = Mouse()
+DVD()
+
+root.mainloop()
