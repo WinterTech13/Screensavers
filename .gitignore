@@ -1,5 +1,7 @@
 *.bat
 *.cfg
+*.scr
+Config.cs
 Include
 Lib
 Scripts
